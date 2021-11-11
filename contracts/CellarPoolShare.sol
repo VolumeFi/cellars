@@ -503,61 +503,6 @@ contract CellarPoolShare is ICellarPoolShare, BlockLock {
 
     function rebalance(CellarTickInfo[] memory _cellarTickInfo, uint256 currentPriceX96) external override notLocked(msg.sender) {
         require(adjuster[msg.sender], "c");//"Not adjuster"
-        (uint160 sqrtPriceX96, , , , , , ) =
-            IUniswapV3Pool(
-                IUniswapV3Factory(UNISWAPV3FACTORY).getPool(
-                    token0,
-                    token1,
-                    feeLevel
-                )
-            )
-                .slot0();
-        require(uint256(sqrtPriceX96) - currentPriceX96 < currentPriceX96 * TOLERANCE / DOMINATOR || currentPriceX96 - uint256(sqrtPriceX96) < currentPriceX96 * TOLERANCE / DOMINATOR, "b"); // "High Slippage"
-        CellarRemoveParams memory removeParams =
-            CellarRemoveParams({
-                tokenAmount: _totalSupply,
-                amount0Min: 0,
-                amount1Min: 0,
-                recipient: address(this),
-                deadline: block.timestamp
-            });
-
-        (, , , CellarFees memory cellarFees) =
-            _removeLiquidity(removeParams, true);
-        lastManageTimestamp = block.timestamp;
-
-        uint256 fee0 = cellarFees.management0 + cellarFees.performance0;
-        uint256 fee1 = cellarFees.management1 + cellarFees.performance1;
-        if (fee0 > cellarFees.collect0) {
-            fee0 = cellarFees.collect0;
-            if (cellarFees.management0 < cellarFees.collect0) {
-                cellarFees.performance0 = cellarFees.collect0 - cellarFees.management0;
-            } else {
-                cellarFees.management0 = cellarFees.collect0;
-                cellarFees.performance0 = 0;
-            }
-        }
-        if (fee1 > cellarFees.collect1) {
-            fee1 = cellarFees.collect1;
-            if (cellarFees.management1 < cellarFees.collect1) {
-                cellarFees.performance1 = cellarFees.collect1 - cellarFees.management1;
-            } else {
-                cellarFees.management1 = cellarFees.collect1;
-                cellarFees.performance1 = 0;
-            }
-        }
-
-        if (fee0 > 0) {
-            IERC20(token0).safeTransfer(_owner, fee0);
-        }
-        if (fee1 > 0) {
-            IERC20(token1).safeTransfer(_owner, fee1);
-        }
-        for (uint256 i = 0; i < cellarTickInfo.length; i++) {
-            INonfungiblePositionManager(NONFUNGIBLEPOSITIONMANAGER).burn(
-                cellarTickInfo[i].tokenId
-            );
-        }
         delete cellarTickInfo;
         for (uint256 i = 0; i < _cellarTickInfo.length; i++) {
             require(_cellarTickInfo[i].tickUpper > _cellarTickInfo[i].tickLower, "C");
@@ -569,17 +514,17 @@ contract CellarPoolShare is ICellarPoolShare, BlockLock {
             cellarTickInfo.push(_cellarTickInfo[i]);
         }
 
-        (uint256 investedAmount0, uint256 investedAmount1) = invest(sqrtPriceX96);
+        // (uint256 investedAmount0, uint256 investedAmount1) = invest(sqrtPriceX96);
 
         emit Rebalance(
-            cellarFees.collect0,
-            cellarFees.collect1,
-            cellarFees.management0,
-            cellarFees.management1,
-            cellarFees.performance0,
-            cellarFees.performance1,
-            investedAmount0,
-            investedAmount1
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
         );
     }
 
